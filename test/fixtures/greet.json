@@ -1,0 +1,6 @@
+{
+  "cases": [
+    { "input": "Ada", "expected": "Hello, Ada!" },
+    { "input": "", "expected": "Hello, there!" }
+  ]
+}

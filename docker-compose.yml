@@ -1,0 +1,22 @@
+# Development Docker Compose — hot-reload dev server in a container.
+# For day-to-day dev, `npm run dev` on the host is usually simpler; this exists
+# for parity and for testing the container boot path.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: app_dev
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=/app/data/app.db
+      - ENABLE_SCHEDULER=${ENABLE_SCHEDULER:-false}
+    volumes:
+      - app_data:/app/data
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  app_data:

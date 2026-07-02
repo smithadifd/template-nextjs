@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.github
+data
+*.db
+*.db-*
+coverage
+.env
+.env*.local
+.env.production
+.deploy.env
+CLAUDE.local.md
+.claude/worktrees
+.claude/settings.local.json
+plans

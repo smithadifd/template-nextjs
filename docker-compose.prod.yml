@@ -1,0 +1,41 @@
+# Production Docker Compose (self-hosted, e.g. a NAS behind a reverse proxy).
+#
+# Usage on the host:
+#   docker-compose -f docker-compose.prod.yml --env-file .env.production up -d
+#
+# .env.production lives on the host and is NEVER committed (see .gitignore).
+# Secret VALUES go there; this file only references them by name.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: app
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=/app/data/app.db
+      - AUTH_SECRET=${AUTH_SECRET}
+      - TZ=${TZ:-UTC}
+    volumes:
+      - app_data:/app/data
+    # Host port is templated — set APP_PORT in .env.production (defaults to 3000).
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+volumes:
+  app_data:
+    name: app_data

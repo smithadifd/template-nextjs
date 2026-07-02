@@ -1,0 +1,24 @@
+name: Deploy
+
+# Manual-only deploy stub. Deployment for this family is a self-hosted Docker
+# Compose push over SSH (see scripts/deploy.sh), which needs secrets that must
+# NOT live in the repo. This workflow is a placeholder so the deploy path is
+# discoverable; wire it to your infra (or keep deploying via the local script).
+#
+# When you enable a real deploy here, put credentials in GitHub Actions Secrets
+# (Settings → Secrets and variables → Actions) — never inline them in this file.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy (stub)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Not configured
+        run: |
+          echo "No deploy configured for this template."
+          echo "Options:"
+          echo "  1. Run ./scripts/deploy.sh locally against your host, or"
+          echo "  2. Replace this stub with an SSH deploy using repo Secrets."

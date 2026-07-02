@@ -1,0 +1,60 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# env files (never commit secrets)
+.env
+.env*.local
+.env.production
+.deploy.env
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# database (runtime data volume)
+/data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# drizzle snapshots (large JSON, not needed at runtime; _journal.json IS needed)
+/drizzle/meta/*_snapshot.json
+
+# personal claude code config
+CLAUDE.local.md
+
+# implementation plans (local workflow, not app code)
+/plans/
+
+# Claude Code local state
+.claude/worktrees/
+.claude/settings.local.json
+
+# terraform plans (never commit)
+*.tfplan
+
+# IDE
+.idea/
+.vscode/

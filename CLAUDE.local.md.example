@@ -1,0 +1,28 @@
+# <PROJECT> — Local Session State (gitignored)
+
+Rename to `CLAUDE.local.md` (gitignored) and use for personal, per-machine, and
+volatile state that doesn't belong in the committed AGENTS.md / CLAUDE.md.
+Keep it readable in one screenful plus a recent session log.
+
+## Deployment
+
+- Target: <host> (e.g. Synology NAS via `ssh <alias>`) at `<remote path>`
+- Container: `<name>`, host port `<port>` (health at `http://<host>:<port>/health`)
+- URL: `https://<name>.home` (Caddy vhost) — if applicable
+- Deploy: `./scripts/deploy.sh` (configured via `.deploy.env`)
+
+## Secrets (locations only — never values)
+
+Stored in `.env.local` (dev) and `.env.production` (on the host, chmod 600):
+
+- `AUTH_SECRET` — <what it protects>
+- `<VAR>` — <what it's for>
+
+Secret *values* live in 1Password / `~/.claude/secrets/` — never in this file.
+
+## Session Log
+
+Record ongoing work here between sessions. Promote durable lessons to
+AGENTS.md § Critical gotchas and delete the entry. Trim to the last ~10 entries.
+
+- <date>: <what changed>
