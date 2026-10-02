@@ -31,6 +31,8 @@ Secret *values* live in 1Password / `~/.claude/secrets/` — never in this file.
 7. **Migrations** follow the container-boot behavior documented in AGENTS.md.
 8. **Docs** include durable AGENTS.md updates in the PR; update the gitignored local session log separately.
 
+Never auto-push; confirm before destructive operations.
+
 ## Session Log
 
 Record ongoing work here between sessions. Promote durable lessons to
