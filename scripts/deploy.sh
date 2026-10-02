@@ -4,9 +4,12 @@ set -euo pipefail
 # ===========================================
 # Deploy — self-hosted Docker Compose over SSH
 # ===========================================
-# Usage: ./scripts/deploy.sh
+# Usage: ./scripts/deploy.sh [--dry-run]
 #
 # Preflight (local) → SSH to the host → pull → compose build/up → health poll.
+# If the health check fails, restore the previous remote commit and rebuild.
+# Database migrations may not be reversible; check migration compatibility before
+# relying on this rollback for an app with persistent data.
 # This is the pre-extraction shape of the shared `deploy-compose` script; a
 # project parameterizes it rather than forking the logic.
 #
@@ -25,11 +28,16 @@ if [ -f "$(dirname "$0")/../.deploy.env" ]; then
 fi
 
 # --- Placeholders — override in .deploy.env or the environment ---
-REMOTE="${DEPLOY_REMOTE:-your-host}"                       # ssh alias or user@host
+REMOTE="${DEPLOY_REMOTE:-}"                                 # configured SSH alias
 REMOTE_PATH="${DEPLOY_REMOTE_PATH:-/path/to/app}"          # project dir on the host
-REMOTE_PRE_CMD="${DEPLOY_REMOTE_PRE_CMD:-true}"            # e.g. PATH export for the host's docker
-REPO_URL="${DEPLOY_REPO_URL:-$(git remote get-url origin 2>/dev/null || echo 'git@github.com:you/your-repo.git')}"
+
 COMPOSE_FILE="${DEPLOY_COMPOSE_FILE:-docker-compose.prod.yml}"
+COMPOSE_CMD="${DEPLOY_COMPOSE_CMD:-docker-compose}"
+if [[ "$COMPOSE_CMD" == docker-compose ]]; then
+  REMOTE_PRE_CMD="${DEPLOY_REMOTE_PRE_CMD:-export PATH=/usr/local/bin:/usr/syno/bin:\$PATH}"
+else
+  REMOTE_PRE_CMD="${DEPLOY_REMOTE_PRE_CMD:-true}"
+fi
 APP_PORT="${DEPLOY_APP_PORT:-3000}"                        # host port from docker-compose.prod.yml
 HEALTH_PATH="${DEPLOY_HEALTH_PATH:-/health}"
 
@@ -37,6 +45,23 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
 info()  { echo -e "${GREEN}[INFO]${NC} $1"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
+validate_config() {
+  if [[ ! "$REMOTE" =~ ^[a-zA-Z0-9_.-]+$ ]] || [[ "$REMOTE" == -* ]] || [[ "$REMOTE" == "your-host" ]]; then
+    error "DEPLOY_REMOTE must be a configured SSH alias (no user@host or port)."
+    exit 1
+  fi
+  if [[ -z "$COMPOSE_CMD" ]]; then
+    error "DEPLOY_COMPOSE_CMD must name a compose command."
+    exit 1
+  fi
+}
+
+dry_run() {
+  info "Dry run for SSH alias $REMOTE"
+  info "Remote path: $REMOTE_PATH; compose command: $COMPOSE_CMD"
+  info "Would run preflight, deploy, health check, and rollback on health failure."
+}
 
 # ------------------------------------------
 # Pre-flight (local)
@@ -73,6 +98,7 @@ preflight() {
 # Deploy (on the host)
 # ------------------------------------------
 deploy() {
+  local REPO_URL="${DEPLOY_REPO_URL:-$(git remote get-url origin 2>/dev/null || echo 'git@github.com:you/your-repo.git')}"
   info "Connecting to $REMOTE..."
 
   ssh "$REMOTE" bash -s <<REMOTE_SCRIPT
@@ -80,15 +106,19 @@ set -euo pipefail
 $REMOTE_PRE_CMD
 
 if [ ! -d "$REMOTE_PATH/.git" ]; then
+  previous_commit=""
   echo "Cloning repository..."
   mkdir -p "$REMOTE_PATH"
   git clone "$REPO_URL" "$REMOTE_PATH"
 else
   echo "Pulling latest changes..."
   cd "$REMOTE_PATH"
+  previous_commit=\$(git rev-parse HEAD)
   git fetch origin main
   git reset --hard origin/main
 fi
+
+printf '%s\n' "\$previous_commit" > "$REMOTE_PATH/.deploy-previous-commit"
 
 cd "$REMOTE_PATH"
 echo "Now at commit: \$(git rev-parse --short HEAD)"
@@ -100,13 +130,13 @@ if [ ! -f ".env.production" ]; then
 fi
 
 echo "--- Building image ---"
-docker-compose -f "$COMPOSE_FILE" --env-file .env.production build
+$COMPOSE_CMD -f "$COMPOSE_FILE" --env-file .env.production build
 
 echo "--- Starting container ---"
-docker-compose -f "$COMPOSE_FILE" --env-file .env.production up -d
+$COMPOSE_CMD -f "$COMPOSE_FILE" --env-file .env.production up -d
 
 echo "--- Status ---"
-docker-compose -f "$COMPOSE_FILE" ps
+$COMPOSE_CMD -f "$COMPOSE_FILE" ps
 REMOTE_SCRIPT
 
   info "Deploy commands sent."
@@ -123,30 +153,64 @@ healthcheck() {
   [ -n "$host" ] || host="$REMOTE"
 
   local url="http://${host}:${APP_PORT}${HEALTH_PATH}"
-  local attempt=1 max_attempts=10
+  local attempt=1 max_attempts=10 delay=1
 
   while [ $attempt -le $max_attempts ]; do
     if curl -sf --max-time 5 "$url" > /dev/null 2>&1; then
       info "Health check passed: $url"
       return 0
     fi
-    warn "Attempt $attempt/$max_attempts — waiting for app to start..."
-    sleep 3
+    if [ "$attempt" -lt "$max_attempts" ]; then
+      warn "Attempt $attempt/$max_attempts — retrying in ${delay}s..."
+      sleep "$delay"
+      delay=$((delay * 2))
+      [ "$delay" -le 8 ] || delay=8
+    fi
     ((attempt++))
   done
 
-  error "Health check failed after $max_attempts attempts."
-  error "Logs: ssh $REMOTE 'cd $REMOTE_PATH && docker-compose -f $COMPOSE_FILE logs --tail 50'"
+  error "Health check failed after $max_attempts attempts: $url"
+  error "Logs: ssh $REMOTE 'cd $REMOTE_PATH && $COMPOSE_CMD -f $COMPOSE_FILE logs --tail 50'"
   return 1
 }
 
+rollback() {
+  warn "Health check failed; restoring the last-known-good remote commit."
+  ssh "$REMOTE" bash -s <<REMOTE_SCRIPT
+set -euo pipefail
+$REMOTE_PRE_CMD
+cd "$REMOTE_PATH"
+previous_commit=\$(cat .deploy-previous-commit)
+if [ -z "\$previous_commit" ]; then
+  echo "No previous remote commit exists; rollback is unavailable."
+  exit 1
+fi
+git reset --hard "\$previous_commit"
+$COMPOSE_CMD -f "$COMPOSE_FILE" --env-file .env.production build
+$COMPOSE_CMD -f "$COMPOSE_FILE" --env-file .env.production up -d
+REMOTE_SCRIPT
+  warn "Restored previous remote commit. Verify service health and migration compatibility."
+}
+
 main() {
+  if [ "$#" -gt 1 ] || { [ "$#" -eq 1 ] && [ "$1" != "--dry-run" ]; }; then
+    error "Usage: $0 [--dry-run]"
+    exit 2
+  fi
+  validate_config
+  if [ "${1:-}" = "--dry-run" ]; then
+    dry_run
+    return 0
+  fi
   echo "========================================="
   echo "  Deploy — $REMOTE"
   echo "========================================="
   preflight
   deploy
-  healthcheck
+  if ! healthcheck; then
+    rollback || error "Rollback failed; inspect the remote service."
+    return 1
+  fi
   info "Deployment successful."
 }
 

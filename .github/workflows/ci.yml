@@ -32,5 +32,8 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Deploy script test
+        run: bash scripts/tests/test-deploy.sh
+
       - name: Build
         run: npm run build
