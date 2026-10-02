@@ -20,6 +20,17 @@ Stored in `.env.local` (dev) and `.env.production` (on the host, chmod 600):
 
 Secret *values* live in 1Password / `~/.claude/secrets/` — never in this file.
 
+## End-of-session workflow
+
+1. **Branch** off `main` (`feat/<topic>`, `fix/<topic>`) — branch protection, no direct pushes.
+2. **Commit** staged files with a Conventional Commit message.
+3. **Push** `git push -u origin <branch>`, then `gh pr create`.
+4. **CI** `gh run watch <run-id> --exit-status` — wait for green.
+5. **Merge** `gh pr merge <n> --squash --delete-branch`; then `git checkout main && git pull`.
+6. **Deploy** after main CI is green: `./scripts/deploy.sh`.
+7. **Migrations** follow the container-boot behavior documented in AGENTS.md.
+8. **Docs** include durable AGENTS.md updates in the PR; update the gitignored local session log separately.
+
 ## Session Log
 
 Record ongoing work here between sessions. Promote durable lessons to
