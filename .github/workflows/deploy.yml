@@ -14,7 +14,7 @@ on:
 jobs:
   deploy:
     name: Deploy (stub)
-    runs-on: ubuntu-latest
+    runs-on: ${{ fromJSON(vars.CI_RUNNER || '["self-hosted","linux"]') }}
     steps:
       - name: Not configured
         run: |
