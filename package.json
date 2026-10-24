@@ -17,10 +17,10 @@
   "dependencies": {
     "better-sqlite3": "^13.0.3",
     "drizzle-orm": "^0.45.4",
-    "next": "^16.4.0",
-    "react": "^19.2.6",
-    "react-dom": "^19.3.0",
-    "zod": "^4.6.5"
+    "next": "^16.4.2",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
@@ -30,11 +30,11 @@
     "autoprefixer": "^10.6.1",
     "drizzle-kit": "^0.31.11",
     "eslint": "^9.39.4",
-    "eslint-config-next": "^16.4.0",
-    "postcss": "^8.5.29",
+    "eslint-config-next": "^16.4.2",
+    "postcss": "^8.5.30",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.6.0",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.5"
   },
   "//esbuild-override": "Hoists a single esbuild across nested consumers that declare divergent direct ranges (@esbuild-kit/core-utils ~0.18.20, drizzle-kit ^0.25.4, tsx ~0.28.0 -- vitest itself has no direct esbuild dependency; it reaches esbuild only through vite's peerDependencies range ^0.27.0 || ^0.28.0), which Dependabot's updater cannot regenerate consistently, causing npm ci EUSAGE lockfile-drift failures (see #33, #40). This is a blanket override, not scoped per-consumer: a future dependency needing an incompatible esbuild range will be silently forced to ^0.28.0 instead of surfacing as an install-time conflict -- accepted deliberately (2026-08-08 election) over a narrower per-consumer override. Drop this override once @esbuild-kit/core-utils, drizzle-kit, and tsx each independently declare esbuild ^0.28 (or later) in their own package.json -- at that point npm's normal resolution converges without help.",
   "overrides": {
