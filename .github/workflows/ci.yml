@@ -9,8 +9,7 @@ on:
 jobs:
   build:
     name: Lint, Typecheck, Test & Build
-    # CI_RUNNER is a JSON label array that overrides the self-hosted default, for example ["ubuntu-latest"] for a public repo.
-    runs-on: ${{ fromJSON(vars.CI_RUNNER || '["self-hosted","linux"]') }}
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v7

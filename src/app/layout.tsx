@@ -3,7 +3,7 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: 'template-nextjs',
-  description: 'A Next.js self-hosted app scaffold (Family 1).',
+  description: 'A Next.js self-hosted app scaffold.',
 };
 
 export const viewport: Viewport = {

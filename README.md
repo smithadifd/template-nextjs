@@ -1,7 +1,7 @@
 # template-nextjs
 
-A GitHub **template repository** for a self-hosted Next.js app — the "Family 1"
-scaffold in Andrew's portfolio standards (Next.js 16 App Router + React 19,
+A GitHub **template repository** for a self-hosted Next.js app: a plain
+scaffold (Next.js 16 App Router + React 19,
 TypeScript strict, SQLite + Drizzle, Docker Compose deploy). It builds green out
 of the box; you fill in the domain.
 
