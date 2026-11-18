@@ -13,6 +13,8 @@
 > Claude Code users: `CLAUDE.md` imports this file and adds a Claude-only section.
 > Don't duplicate content from here into `CLAUDE.md`.
 
+Release class: continuous
+
 ---
 
 ## What <PROJECT> is

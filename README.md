@@ -5,6 +5,8 @@ scaffold (Next.js 16 App Router + React 19,
 TypeScript strict, SQLite + Drizzle, Docker Compose deploy). It builds green out
 of the box; you fill in the domain.
 
+Released continuously from `main`; there are no versioned releases.
+
 ## Use this template
 
 ```bash
